@@ -275,3 +275,74 @@ for each in minutes_list_url[0:number]:
         temp_table = pd.concat(
             [temp_table, temp_dict, temp_dict_neg, temp_dict_pos, temp_dict_sentiment]
         )
+
+        # dig deeper topics
+
+        temp_dict = dict()
+        for sen in sentences:
+            if (
+                "asset purchase" in sen
+                or "asset purchase" in sen
+                or "asset program" in sen
+                or "holdings of" in sen
+                or "securities holdings" in sen
+            ):
+                # for key, value in asset_program.items(): # for each key and value in sub dictionaries
+                for key, value in in_deep_topics[
+                    "asset_program"
+                ].items():  # for each key and value in sub dictionaries
+                    # for key, value in asset_program.items(): # for each key and value in sub dictionaries
+                    if any(item in sen for item in value):
+                        temp_dict[key] = temp_dict.get(key, 0) + 1
+
+                    else:
+                        temp_dict[key] = temp_dict.get(key, 0) + 0
+
+        temp_dict = pd.DataFrame(temp_dict.items(), columns=["subject", "frequency"])
+        temp_dict["date"] = minutes_x
+        temp_dict["category"] = "in_deep_asset_program"
+        temp_dict["additional"] = "count_words"
+        temp_dict["frequency_share"] = (temp_dict["frequency"] / len(sentences)) * 100
+        minutes_all_tables = pd.concat([minutes_all_tables, temp_dict])
+
+        temp_dict = dict()
+        for sen in sentences:
+            if "inflation" in sen or "cpi" in sen or "pce" in sen:
+                # for key, value in asset_program.items(): #for each key and value in sub dictionaries
+                for key, value in in_deep_topics["inflation"].items():
+                    # for key, value in inflation.items(): # for each key and value in sub dictionaries
+                    if any(item in sen for item in value):
+                        temp_dict[key] = temp_dict.get(key, 0) + 1
+                    else:
+                        temp_dict[key] = temp_dict.get(key, 0) + 0
+
+        temp_dict = pd.DataFrame(temp_dict.items(), columns=["subject", "frequency"])
+        temp_dict["date"] = minutes_x
+        temp_dict["category"] = "in_deep_topics"
+        temp_dict["additional"] = "count_words"
+        temp_dict["frequency_share"] = (temp_dict["frequency"] / len(sentences)) * 100
+        minutes_all_tables = pd.concat([minutes_all_tables, temp_dict])
+
+        # Labor
+
+        temp_dict = dict()
+        for sen in sentences:
+            if "labor" in sen or "employment" in sen or "unemployment" in sen:
+                # for key, value in asset_program.items(): # for each key and value in sub dictionaries
+                for key, value in in_deep_topics["labor"].items():
+                    # for key, value in inflation.items(): # for each key and value in sub dictionaries
+                    if any(item in sen for item in value):
+                        temp_dict[key] = temp_dict.get(key, 0) + 1
+                    else:
+                        temp_dict[key] = temp_dict.get(key, 0) + 0
+
+        temp_dict = pd.DataFrame(temp_dict.items(), columns=["subject", "frequency"])
+        temp_dict["date"] = minutes_x
+        temp_dict["category"] = "in_deep_topics"
+        temp_dict["additional"] = "count_words"
+        temp_dict["frequency_share"] = (temp_dict["frequency"] / len(sentences)) * 100
+        minutes_all_tables = pd.concat([minutes_all_tables, temp_dict])
+
+minutes_all_tables = pd.concat([minutes_all_tables, temp_table])
+
+minutes_all_tables.to_csv("data/fomcMinutesSummary.csv", encoding="utf-8", index=False)
