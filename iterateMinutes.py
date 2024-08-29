@@ -167,3 +167,111 @@ for each in minutes_list_url[0:number]:
     sentences_no_comma = [
         item.replace(",", ".', '") for item in sentences
     ]  # divide into sentences
+    temp_dict = dict()
+
+    # print(sentences_no_comma)
+    for sen in sentences_no_comma:
+        word = word_tokenize(sen)
+        word = [wordnet_lemmatizer.lemmatize(w) for w in word]
+        sen = TreebankWordDetokenizer().detokenize(word)  # put words in sentence
+
+        if any(item in sen for item in intensifiers):
+            temp_dict["intensifiers"] = temp_dict.get("intensifiers", 0) + 1
+            if any(item in sen for item in sentiment_words["negative"]):
+                temp_dict["intensifiers_neg"] = temp_dict.get("intensifiers_neg", 0) + 1
+                temp_dict["intensifiers_net"] = temp_dict.get("intensifiers_net", 0) - 1
+            if any(item in sen for item in sentiment_words["positive"]):
+                temp_dict["intensifiers_pos"] = temp_dict.get("intensifiers_pos", 0) + 1
+                temp_dict["intensifiers_net"] = temp_dict.get("intensifiers_net", 0) + 1
+
+    temp_dict = pd.DataFrame(temp_dict.items(), columns=["subject", "frequency"])
+    temp_dict["date"] = minutes_x
+    temp_dict["category"] = "intensifiers"
+    temp_dict["additional"] = "count_words"
+    temp_dict["frequency_share"] = (temp_dict["frequency"] / len(sentences)) * 100
+
+    minutes_all_tables = pd.concat([minutes_all_tables, temp_dict])
+
+    # Count paragraphs that include topics, and how many of thos paragrpahs that contains positive vs negative words.
+
+    for i in topics:
+        temp_dict = dict()
+        temp_dict_neg = dict()
+        temp_dict_pos = dict()
+        temp_dict_sentiment = dict()
+        category = i
+        for sen in sentences:
+            list_sentence = word_tokenize(sen)
+            list_sentence = [wordnet_lemmatizer.lemmatize(w) for w in list_sentence]
+
+            sen = word_tokenize(sen)
+            sen = [wordnet_lemmatizer.lemmatize(w) for w in sen]
+            sen = TreebankWordDetokenizer().detokenize(sen)
+
+            for key, value in topics[i].items():
+                for v in value:
+                    if v in sen:
+                        temp_dict[key] = (
+                            temp_dict.get(key, 0) + 1
+                        )  # count. one count per paragraph that includes one or more of the words
+                        if any(
+                            item in list_sentence
+                            for item in sentiment_words["negative"]
+                        ):
+                            temp_dict_neg[key] = temp_dict_neg.get(key, 0) + 1
+                            temp_dict_sentiment[key] = (
+                                temp_dict_sentiment.get(key, 0) - 1
+                            )
+                        if any(
+                            item in list_sentence
+                            for item in sentiment_words["positive"]
+                        ):
+                            temp_dict_pos[key] = temp_dict_pos.get(key, 0) + 1
+                            temp_dict_sentiment[key] = (
+                                temp_dict_sentiment.get(key, 0) + 1
+                            )
+                    else:
+                        temp_dict[key] = temp_dict.get(key, 0) + 0
+                        temp_dict_pos[key] = temp_dict_pos.get(key, 0) + 0
+                        temp_dict_neg[key] = temp_dict_neg.get(key, 0) + 0
+                        temp_dict_sentiment[key] = temp_dict_sentiment.get(key, 0) + 0
+
+        temp_dict = pd.DataFrame(temp_dict.items(), columns=["subject", "frequency"])
+        temp_dict["date"] = minutes_x
+        temp_dict["category"] = category
+        temp_dict["additional"] = "count_words"
+        temp_dict["frequency_share"] = (temp_dict["frequency"] / len(sentences)) * 100
+
+        temp_dict_neg = pd.DataFrame(
+            temp_dict_neg.items(), columns=["subject", "frequency"]
+        )
+        temp_dict_neg["date"] = minutes_x
+        temp_dict_neg["category"] = category
+        temp_dict_neg["additional"] = "count_negative_words_in_paragraph"
+        temp_dict_neg["frequency_share"] = (
+            temp_dict_neg["frequency"] / len(sentences)
+        ) * 100
+
+        temp_dict_pos = pd.DataFrame(
+            temp_dict_pos.items(), columns=["subject", "frequency"]
+        )
+        temp_dict_pos["date"] = minutes_x
+        temp_dict_pos["category"] = category
+        temp_dict_pos["additional"] = "count_positive_words_in_paragraph"
+        temp_dict_pos["frequency_share"] = (
+            temp_dict_pos["frequency"] / len(sentences)
+        ) * 100
+
+        temp_dict_sentiment = pd.DataFrame(
+            temp_dict_sentiment.items(), columns=["subject", "frequency"]
+        )
+        temp_dict_sentiment["date"] = minutes_x
+        temp_dict_sentiment["category"] = category
+        temp_dict_sentiment["additional"] = "net_sentiment_per_topic"
+        temp_dict_sentiment["frequency_share"] = (
+            temp_dict_sentiment["frequency"] / len(sentences)
+        ) * 100
+
+        temp_table = pd.concat(
+            [temp_table, temp_dict, temp_dict_neg, temp_dict_pos, temp_dict_sentiment]
+        )
